@@ -1,0 +1,101 @@
+item_id,name,ticker,market,asset_class,sector,risk_level,theme
+I001,ACE 미국배당다우존스,402970,KR,ETF,배당,2,배당
+I002,TIGER 미국배당다우존스,458730,KR,ETF,배당,2,배당
+I003,KODEX 미국배당다우존스,489250,KR,ETF,배당,2,배당
+I004,Schwab US Dividend Equity ETF,SCHD,US,ETF,배당,2,배당
+I005,Vanguard High Dividend Yield ETF,VYM,US,ETF,배당,2,배당
+I006,TIGER 리츠부동산인프라,329200,KR,ETF,리츠,2,배당
+I007,KODEX 국고채30년액티브,439870,KR,ETF,채권,1,채권
+I008,iShares 20+ Year Treasury Bond ETF,TLT,US,ETF,채권,2,채권
+I009,iShares Core US Aggregate Bond ETF,AGG,US,ETF,채권,1,채권
+I010,Vanguard Total Bond Market ETF,BND,US,ETF,채권,1,채권
+I011,KODEX 단기채권,153130,KR,ETF,채권,1,채권
+I012,iShares MSCI USA Min Vol Factor ETF,USMV,US,ETF,저변동,2,가치
+I013,SK텔레콤,017670,KR,주식,통신,2,배당
+I014,KT,030200,KR,주식,통신,2,배당
+I015,LG유플러스,032640,KR,주식,통신,2,배당
+I016,한국전력,015760,KR,주식,유틸리티,3,가치
+I017,KT&G,033780,KR,주식,소비재,2,배당
+I018,Coca-Cola,KO,US,주식,소비재,2,배당
+I019,Procter & Gamble,PG,US,주식,소비재,2,배당
+I020,Johnson & Johnson,JNJ,US,주식,헬스케어,2,배당
+I021,Verizon Communications,VZ,US,주식,통신,2,배당
+I022,PepsiCo,PEP,US,주식,소비재,2,배당
+I023,KB금융,105560,KR,주식,금융,3,가치
+I024,신한지주,055550,KR,주식,금융,3,가치
+I025,하나금융지주,086790,KR,주식,금융,3,가치
+I026,우리금융지주,316140,KR,주식,금융,3,가치
+I027,삼성생명,032830,KR,주식,금융,3,배당
+I028,삼성화재,000810,KR,주식,금융,3,배당
+I029,JPMorgan Chase,JPM,US,주식,금융,3,가치
+I030,Bank of America,BAC,US,주식,금융,3,가치
+I031,Berkshire Hathaway B,BRK.B,US,주식,금융,3,가치
+I032,Visa,V,US,주식,금융,3,성장
+I033,TIGER 은행고배당플러스TOP10,466940,KR,ETF,금융,2,배당
+I034,KODEX 200,069500,KR,ETF,지수,3,인덱스
+I035,TIGER 200,102110,KR,ETF,지수,3,인덱스
+I036,KODEX 코스닥150,229200,KR,ETF,지수,4,인덱스
+I037,SPDR S&P 500 ETF Trust,SPY,US,ETF,지수,3,인덱스
+I038,Vanguard S&P 500 ETF,VOO,US,ETF,지수,3,인덱스
+I039,Vanguard Total Stock Market ETF,VTI,US,ETF,지수,3,인덱스
+I040,TIGER 미국S&P500,360750,KR,ETF,지수,3,인덱스
+I041,ACE 미국S&P500,360200,KR,ETF,지수,3,인덱스
+I042,iShares Core MSCI EAFE ETF,IEFA,US,ETF,지수,3,인덱스
+I043,Vanguard FTSE Developed Markets ETF,VEA,US,ETF,지수,3,인덱스
+I044,삼성전자,005930,KR,주식,반도체,3,성장
+I045,SK하이닉스,000660,KR,주식,반도체,4,성장
+I046,NAVER,035420,KR,주식,인터넷플랫폼,3,성장
+I047,카카오,035720,KR,주식,인터넷플랫폼,4,성장
+I048,한미반도체,042700,KR,주식,반도체,4,성장
+I049,DB하이텍,000990,KR,주식,반도체,4,성장
+I050,리노공업,058470,KR,주식,반도체,4,성장
+I051,삼성에스디에스,018260,KR,주식,IT서비스,3,성장
+I052,크래프톤,259960,KR,주식,게임,4,성장
+I053,엔씨소프트,036570,KR,주식,게임,4,성장
+I054,넷마블,251270,KR,주식,게임,4,성장
+I055,Apple,AAPL,US,주식,기술,3,성장
+I056,Microsoft,MSFT,US,주식,기술,3,성장
+I057,NVIDIA,NVDA,US,주식,반도체,4,성장
+I058,Alphabet A,GOOGL,US,주식,인터넷플랫폼,3,성장
+I059,Amazon,AMZN,US,주식,인터넷플랫폼,4,성장
+I060,Meta Platforms,META,US,주식,인터넷플랫폼,4,성장
+I061,Broadcom,AVGO,US,주식,반도체,4,성장
+I062,Advanced Micro Devices,AMD,US,주식,반도체,4,성장
+I063,Netflix,NFLX,US,주식,미디어,4,성장
+I064,Salesforce,CRM,US,주식,소프트웨어,4,성장
+I065,Adobe,ADBE,US,주식,소프트웨어,3,성장
+I066,ASML Holding,ASML,US,주식,반도체,4,성장
+I067,Taiwan Semiconductor,TSM,US,주식,반도체,4,성장
+I068,Invesco QQQ Trust,QQQ,US,ETF,지수,4,성장
+I069,TIGER 미국나스닥100,133690,KR,ETF,지수,4,성장
+I070,KODEX 미국나스닥100,379810,KR,ETF,지수,4,성장
+I071,VanEck Semiconductor ETF,SMH,US,ETF,반도체,4,성장
+I072,iShares Semiconductor ETF,SOXX,US,ETF,반도체,4,성장
+I073,TIGER 미국테크TOP10,381170,KR,ETF,기술,4,성장
+I074,Vanguard Growth ETF,VUG,US,ETF,지수,3,성장
+I075,ARK Innovation ETF,ARKK,US,ETF,테마,5,성장
+I076,TIGER 반도체TOP10,396500,KR,ETF,반도체,4,성장
+I077,Technology Select Sector SPDR,XLK,US,ETF,기술,3,성장
+I078,더존비즈온,012510,KR,주식,IT서비스,3,성장
+I079,KODEX 레버리지,122630,KR,ETF,레버리지,5,레버리지
+I080,KODEX 코스닥150레버리지,233740,KR,ETF,레버리지,5,레버리지
+I081,TIGER 미국나스닥100레버리지,418660,KR,ETF,레버리지,5,레버리지
+I082,ProShares UltraPro QQQ,TQQQ,US,ETF,레버리지,5,레버리지
+I083,Direxion Semiconductor Bull 3X,SOXL,US,ETF,레버리지,5,레버리지
+I084,ProShares UltraPro S&P500,UPRO,US,ETF,레버리지,5,레버리지
+I085,KODEX 인버스,114800,KR,ETF,인버스,5,레버리지
+I086,ProShares UltraPro Short QQQ,SQQQ,US,ETF,인버스,5,레버리지
+I087,TIGER 2차전지테마,305540,KR,ETF,2차전지,5,친환경
+I088,KODEX 2차전지산업,305720,KR,ETF,2차전지,5,친환경
+I089,TIGER 글로벌AI인프라,494340,KR,ETF,테마,5,AI
+I090,iShares Global Clean Energy ETF,ICLN,US,ETF,친환경,4,친환경
+I091,Global X Lithium & Battery Tech ETF,LIT,US,ETF,2차전지,5,친환경
+I092,ARK Genomic Revolution ETF,ARKG,US,ETF,바이오,5,성장
+I093,TIGER 우주항공방산,445910,KR,ETF,방산,4,테마
+I094,Tesla,TSLA,US,주식,자동차,5,성장
+I095,LG에너지솔루션,373220,KR,주식,2차전지,5,친환경
+I096,에코프로비엠,247540,KR,주식,2차전지,5,친환경
+I097,포스코퓨처엠,003670,KR,주식,2차전지,5,친환경
+I098,셀트리온,068270,KR,주식,바이오,4,성장
+I099,알테오젠,196170,KR,주식,바이오,5,성장
+I100,Palantir Technologies,PLTR,US,주식,소프트웨어,5,AI
