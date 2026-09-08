@@ -28,19 +28,19 @@ def load():
     """종목·투자자·거래 기록을 읽는다."""
     items = pd.read_csv(DATA / "items.csv")
     users = pd.read_csv(DATA / "users.csv")
-    inter = pd.read_csv(DATA / "interactions.csv", parse_dates=["ts"])
-    return items, users, inter
+    interactions = pd.read_csv(DATA / "interactions.csv", parse_dates=["ts"])
+    return items, users, interactions
 
 
-def split_by_time(inter, test_months=TEST_MONTHS):
+def split_by_time(interactions, test_months=TEST_MONTHS):
     """시간을 기준으로 나눈다 — 과거로 배우고 미래를 맞힌다.
 
     3주차에서 다루는 내용이다. 무작위로 나누면 미래의 기록으로 과거를 맞히게 되어
     점수가 실제보다 높게 나온다(데이터 누수). 실제 서비스에서는 미래를 볼 수 없으므로
     시간을 기준으로 나눠야 정직한 점수가 된다.
     """
-    cut = inter["ts"].max() - pd.DateOffset(months=test_months)
-    return inter[inter["ts"] < cut].copy(), inter[inter["ts"] >= cut].copy(), cut
+    cut = interactions["ts"].max() - pd.DateOffset(months=test_months)
+    return interactions[interactions["ts"] < cut].copy(), interactions[interactions["ts"] >= cut].copy(), cut
 
 
 def recall_at_k(recommend, train, test, k=TOP_K):
@@ -106,8 +106,8 @@ def leaderboard():
 
 def demo():
     """이 파일이 제대로 도는지 확인하는 자체 점검."""
-    items, users, inter = load()
-    train, test, cut = split_by_time(inter)
+    items, users, interactions = load()
+    train, test, cut = split_by_time(interactions)
     assert len(train) > 0 and len(test) > 0, "분할 결과가 비어 있다"
     assert train["ts"].max() < test["ts"].min(), "학습 구간이 테스트 구간보다 뒤에 있다"
 
