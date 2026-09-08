@@ -91,6 +91,28 @@ def record(level, name, score, note=""):
     return row
 
 
+def use_korean_font():
+    """그래프의 한글이 네모로 나오지 않게, 이 컴퓨터에 깔린 한글 글꼴을 골라 쓴다.
+
+    어느 글꼴이 깔려 있는지는 컴퓨터마다 다르다. 수업에서 가르칠 내용이 아니라
+    노트북 밖으로 뺐다. 고른 글꼴 이름을 돌려주고, 하나도 없으면 None 을 돌려준다.
+    """
+    import matplotlib
+    from matplotlib import font_manager
+
+    깔린것 = set()
+    for 글꼴 in font_manager.fontManager.ttflist:
+        깔린것.add(글꼴.name)
+
+    for 이름 in ["AppleGothic", "Malgun Gothic", "NanumGothic",
+                 "NanumBarunGothic", "Noto Sans CJK KR"]:
+        if 이름 in 깔린것:
+            matplotlib.rcParams["font.family"] = 이름
+            matplotlib.rcParams["axes.unicode_minus"] = False   # 마이너스가 네모로 나오는 것을 막는다
+            return 이름
+    return None
+
+
 def leaderboard(upto=None):
     """지금까지 쌓인 주차별 점수표를 읽는다.
 
