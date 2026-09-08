@@ -91,14 +91,21 @@ def record(level, name, score, note=""):
     return row
 
 
-def leaderboard():
-    """지금까지 쌓인 주차별 점수표를 읽는다."""
+def leaderboard(upto=None):
+    """지금까지 쌓인 주차별 점수표를 읽는다.
+
+    upto 를 주면 그 주차까지만 남긴다. **노트북에서는 반드시 그 주차를 넘긴다.**
+    작업 저장소에는 뒤 주차의 결과가 이미 쌓여 있어서, 그냥 부르면 학생이 앞으로
+    배울 답(행렬분해·후보 생성 …)이 출력에 실려 그대로 배포된다.
+    """
     import json
     cols = ["level", "name", "recall_at_10", "note"]
     if not SCORES.exists():
         return pd.DataFrame(columns=cols)
     rows = [json.loads(p.read_text(encoding="utf-8"))
             for p in sorted(SCORES.glob("level_*.json"))]
+    if upto is not None:
+        rows = [r for r in rows if r["level"] <= int(upto)]
     if not rows:
         return pd.DataFrame(columns=cols)
     return pd.DataFrame(rows).sort_values("level").reset_index(drop=True)
