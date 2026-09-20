@@ -43,6 +43,27 @@ def split_by_time(interactions, test_months=TEST_MONTHS):
     return interactions[interactions["ts"] < cut].copy(), interactions[interactions["ts"] >= cut].copy(), cut
 
 
+def recall_per_user(recommend, train, test, k=TOP_K):
+    """사람마다의 Recall@k 를 {사람: 점수} 로 돌려준다.
+
+    recall_at_k 는 평균 하나만 주는데, 기존·신규처럼 무리를 갈라 보려면 사람별 점수가
+    있어야 한다(3주차부터 계속 쓴다). 재는 방식은 recall_at_k 와 한 글자도 다르지 않다 —
+    이미 담은 것은 정답에서 빼고, 맞힐 것이 없는 사람은 채점에서 뺀다.
+
+    recommend(user_id, seen) 는 추천할 종목 목록을 돌려주는 함수다.
+    """
+    seen_map = train.groupby("user_id")["item_id"].apply(set).to_dict()
+    scores = {}
+    for uid, grp in test.groupby("user_id"):
+        seen = seen_map.get(uid, set())
+        answer = set(grp["item_id"]) - seen          # 이미 담은 건 정답에서 뺀다
+        if not answer:                               # 맞힐 것이 없으면
+            continue                                 # 채점에서 뺀다
+        got = set(recommend(uid, seen)[:k])
+        scores[uid] = len(answer & got) / len(answer)
+    return scores
+
+
 def recall_at_k(recommend, train, test, k=TOP_K):
     """Recall@k — 그 사람이 실제로 담은 것 중 내 추천 10개 안에 몇 개가 들었나.
 
@@ -50,18 +71,12 @@ def recall_at_k(recommend, train, test, k=TOP_K):
     seen 은 그 사람이 학습 구간에서 이미 담은 종목이며, 이미 담은 것을 다시 추천하면
     안 되므로 걸러 내는 데 쓴다.
 
-    반환값은 (평균 점수, 채점한 사람 수) 이다.
+    반환값은 (평균 점수, 채점한 사람 수) 이다. 사람별 점수가 필요하면 recall_per_user.
     """
-    seen_map = train.groupby("user_id")["item_id"].apply(set).to_dict()
-    scores = []
-    for uid, grp in test.groupby("user_id"):
-        seen = seen_map.get(uid, set())
-        answer = set(grp["item_id"]) - seen          # 이미 담은 건 정답에서 뺀다
-        if not answer:
-            continue
-        got = set(recommend(uid, seen)[:k])
-        scores.append(len(answer & got) / len(answer))
-    return float(np.mean(scores)), len(scores)
+    scores = recall_per_user(recommend, train, test, k)
+    if not scores:
+        return 0.0, 0
+    return float(np.mean(list(scores.values()))), len(scores)
 
 
 def take(ranked, seen, k=TOP_K):
