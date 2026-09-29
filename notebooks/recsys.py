@@ -84,6 +84,55 @@ def take(ranked, seen, k=TOP_K):
     return [i for i in ranked if i not in seen][:k]
 
 
+def interaction_matrix(train, items):
+    """학습 구간을 사람 × 종목 표로 펼친다 — 담았으면 1, 아니면 0.
+
+    4주차에 노트북에서 직접 만들어 본 그 표다. 5주차부터는 표를 만드는 것이
+    수업 목표가 아니므로 여기로 옮겼다.
+    """
+    표 = pd.crosstab(train["user_id"], train["item_id"])
+    표 = (표 > 0).astype(int)
+    return 표.reindex(columns=items["item_id"], fill_value=0)
+
+
+def segments(train, items):
+    """2주차 세그먼트를 다시 만든다 — 주력 섹터 | 평균 위험도.
+
+    2주차에 노트북에서 손으로 만들어 본 것이다(`레버리지|4` 같은 이름).
+    5주차에서는 이것이 후보를 추리는 재료로 쓰일 뿐 수업 목표가 아니라서
+    여기로 옮겼다. 만드는 방법이 궁금하면 2주차 노트북을 보면 된다.
+
+    반환값은 ({사람: 세그먼트 이름}, {세그먼트 이름: 많이 담긴 종목 순서}) 이다.
+    """
+    섹터 = items.set_index("item_id")["sector"].to_dict()
+    위험도 = items.set_index("item_id")["risk_level"].to_dict()
+
+    거래 = train.copy()
+    거래["섹터"] = 거래["item_id"].map(섹터)
+    거래["위험도"] = 거래["item_id"].map(위험도)
+
+    주력섹터 = 거래.groupby("user_id")["섹터"].agg(lambda x: x.value_counts().index[0])
+    평균위험도 = 거래.groupby("user_id")["위험도"].mean().round().astype(int)
+    이름 = (주력섹터.astype(str) + "|" + 평균위험도.astype(str)).to_dict()
+
+    거래["세그먼트"] = 거래["user_id"].map(이름)
+    순위표 = {}
+    for 세그, 덩어리 in 거래.groupby("세그먼트"):
+        순위표[세그] = list(덩어리["item_id"].value_counts().index)
+    return 이름, 순위표
+
+
+def fill_up(후보, 채울것, n):
+    """후보가 n개가 안 되면 뒤를 채운다 — 이미 들어 있는 것은 건너뛴다."""
+    후보 = list(후보)
+    for 번호 in 채울것:
+        if len(후보) >= n:
+            break
+        if 번호 not in 후보:
+            후보.append(번호)
+    return 후보
+
+
 # ------------------------------------------------------------------ 리더보드
 # 주차마다 파일을 따로 쓴다. 한 파일에 모아 쓰면 여러 노트북을 동시에 돌릴 때
 # 서로 덮어써서 점수가 사라진다.
