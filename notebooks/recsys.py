@@ -197,6 +197,97 @@ def leaderboard(upto=None):
     return pd.DataFrame(rows).sort_values("level").reset_index(drop=True)
 
 
+# ------------------------------------------------------------------ 6주차 FM · MLP
+# 6주차 수업 목표는 FM 과 MLP 가 「무엇을 하는지」 이해하고 결과를 비교하는 것이다.
+# 학습 데이터를 만드는 과정과 FM 의 학습 계산은 수업 목표가 아니라서 여기로 뺐다.
+# FM 은 scikit-learn 에 없어서 numpy 로 직접 짰다 — 설치할 것이 없다.
+FEATURE_COLS = ["sector", "asset_class", "risk_level", "theme"]   # 섹터 · 자산군 · 위험도 · 테마
+
+
+def training_rows(train, items, neg=4, seed=42):
+    """학습 데이터를 만든다 — 담은 짝은 1, 담지 않은 짝은 0.
+
+    담은 짝만 있으면 모델은 「무엇이든 1」이라고 배운다. 그래서 사람마다 담지 않은
+    종목을 담은 개수의 neg 배만큼 무작위로 골라 0 으로 넣는다 — 네거티브 샘플링.
+    seed 를 고정하면 몇 번을 돌려도 같은 종목이 뽑힌다.
+    """
+    rng = np.random.default_rng(seed)
+    전체 = list(items["item_id"])
+    줄들 = []
+    for 사람, 담은것 in train.groupby("user_id")["item_id"].apply(set).items():
+        for 번호 in sorted(담은것):
+            줄들.append((사람, 번호, 1))
+        안_담은것 = [번호 for 번호 in 전체 if 번호 not in 담은것]
+        for 번호 in rng.choice(안_담은것, min(len(안_담은것), neg * len(담은것)), replace=False):
+            줄들.append((사람, 번호, 0))
+    return pd.DataFrame(줄들, columns=["user_id", "item_id", "label"])
+
+
+def all_pairs(user_ids, items):
+    """점수를 매길 모든 (사용자, 종목) 짝 — 사용자 순서대로, 그 안에서 종목 순서대로."""
+    짝 = [(사람, 번호) for 사람 in user_ids for 번호 in items["item_id"]]
+    return pd.DataFrame(짝, columns=["user_id", "item_id"])
+
+
+def one_hot(rows, items, features=True):
+    """(사용자, 종목) 짝을 원핫 인코딩한다 — 한 줄에 사용자 1칸 · 종목 1칸 · 상품 정보 4칸이 1.
+
+    features=False 면 상품 정보 없이 사용자 · 종목만 펼친다.
+    열 목록을 고정해 두어서, 학습 데이터와 점수 매길 짝의 열이 언제나 같다.
+    """
+    표 = rows[["user_id", "item_id"]].merge(items[["item_id"] + FEATURE_COLS], on="item_id", how="left")
+    열 = ["user_id", "item_id"] + (FEATURE_COLS if features else [])
+    범주 = {"user_id": sorted(rows["user_id"].unique())}
+    for 이름 in 열[1:]:
+        범주[이름] = sorted(items[이름].astype(str).unique())
+    for 이름 in 열:
+        표[이름] = pd.Categorical(표[이름].astype(str), categories=범주[이름])
+    return pd.get_dummies(표[열]).astype(np.float32)
+
+
+class FM:
+    """FM(factorization machine) — 1 인 칸들을 둘씩 짝지어 잠재 요인의 내적을 모두 더한다.
+
+        점수 = b + (1 인 칸의 가중치 합) + (1 인 칸 둘씩 짝지은 내적의 합)
+        확률 = 시그모이드(점수)      ← 0 ~ 1 사이로 바꾼다
+
+    사용법은 scikit-learn 모델과 같다 — FM().fit(X, y) 로 학습, predict(X) 로 확률.
+    k = 칸마다 붙는 잠재 요인 개수(4주차의 8 과 같은 뜻), epochs = 학습 데이터를 몇 번 돌지.
+    """
+
+    def __init__(self, k=8, epochs=80, lr=0.01, reg=1e-4, seed=42):
+        self.k, self.epochs, self.lr, self.reg, self.seed = k, epochs, lr, reg, seed
+
+    def _score(self, X):
+        XV = X @ self.V
+        짝_합 = 0.5 * ((XV ** 2).sum(1) - ((X ** 2) @ (self.V ** 2)).sum(1))   # 모든 짝의 내적 합을 한 번에
+        return self.b + X @ self.w + 짝_합
+
+    def fit(self, X, y):
+        rng = np.random.default_rng(self.seed)
+        self.columns = list(X.columns)
+        X, y = X.values, np.asarray(y, dtype=float)
+        self.V = rng.normal(0, 0.05, (X.shape[1], self.k))
+        self.w = np.zeros(X.shape[1])
+        self.b = 0.0
+        for _ in range(self.epochs):                       # 에폭 — 학습 데이터 전체를 한 번 도는 것
+            순서 = rng.permutation(len(X))
+            for 시작 in range(0, len(X), 256):              # 256줄씩 나눠 조금씩 고친다
+                줄 = 순서[시작:시작 + 256]
+                xb = X[줄]
+                g = 1 / (1 + np.exp(-self._score(xb))) - y[줄]   # 예측 확률 − 정답
+                XV = xb @ self.V
+                self.b -= self.lr * g.sum()
+                self.w -= self.lr * (xb.T @ g + self.reg * self.w)
+                self.V -= self.lr * (xb.T @ (g[:, None] * XV)
+                                     - self.V * ((xb ** 2).T @ g)[:, None] + self.reg * self.V)
+        return self
+
+    def predict(self, X):
+        X = X.reindex(columns=self.columns, fill_value=0).values
+        return 1 / (1 + np.exp(-self._score(X)))
+
+
 def demo():
     """이 파일이 제대로 도는지 확인하는 자체 점검."""
     items, users, interactions = load()
