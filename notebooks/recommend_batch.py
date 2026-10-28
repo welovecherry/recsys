@@ -2,13 +2,15 @@
 
     python recommend_batch.py
 
-하는 일 (6주차까지 노트북에서 셀을 하나씩 눌러 하던 일을 그대로 묶었다)
-  1. 거래 기록 전체로 모델을 학습한다            — 학습(training)
-  2. 300명 모두에게 위험도 상한을 지킨 추천 10개   — 일괄 추천(batch recommendation)
-  3. 정해 둔 규격대로 CSV 파일 하나에 저장한다      — 결과 파일 규격
-  4. 규격을 지켰는지 검사한다
+하는 일 (6주차까지 노트북에서 셀을 하나씩 눌러 하던 일을 그대로 묶었다) — 파이프라인(pipeline)
+  ① 들어온 데이터에 빈 값 · 중복 · 없는 번호가 없는지 검사한다   — 데이터 점검
+  ② 거래 기록 전체로 모델을 학습한다                            — 학습(training)
+  ③ 300명 모두에게 위험도 상한을 지킨 추천 10개                 — 일괄 추천(batch recommendation)
+  ④ 결과 표가 정해 둔 규격을 지켰는지 검사한다                  — 규격 검사
+  ⑤ 통과하면 CSV 파일 하나에 저장한다                           — 결과 파일
+  ① 이나 ④ 에서 문제가 나오면 그 자리에서 멈춘다. 잘못된 파일을 남기지 않는다.
 
-다음 주 앱은 이 파일을 읽기만 한다 — 서빙(serving). 앱은 모델을 다시 학습하지 않는다.
+다음 주 API(FastAPI)는 이 파일을 읽기만 한다 — 서빙(serving). API 는 모델을 다시 학습하지 않는다.
 """
 from pathlib import Path
 
@@ -21,6 +23,16 @@ import recsys
 출력_파일 = Path("output") / "recommendations.csv"       # 결과 파일이 놓일 자리
 상한 = {"안정형": 3, "성장형": 4, "공격형": 5}          # 6주차 적합 기준 — 투자성향별 최대 위험도
 규격_열 = ["user_id", "rank", "item_id", "item_name", "risk_level", "persona", "score"]
+
+
+def 데이터_점검(items, users, 기록):
+    """들어온 데이터를 검사해 {검사 이름: 문제 개수} 를 돌려준다. 모두 0 이면 통과."""
+    return {"빈 값": int(items.isna().sum().sum() + users.isna().sum().sum() + 기록.isna().sum().sum()),
+            "똑같은 거래 기록": int(기록.duplicated().sum()),
+            "종목 목록에 없는 종목 번호": int((~기록["item_id"].isin(items["item_id"])).sum()),
+            "투자자 목록에 없는 투자자 번호": int((~기록["user_id"].isin(users["user_id"])).sum()),
+            "세 가지가 아닌 투자성향": int((~users["persona"].isin(상한)).sum()),
+            "1 ~ 5 를 벗어난 위험도": int((~items["risk_level"].between(1, 5)).sum())}
 
 
 def 학습하기(기록, items):
@@ -91,14 +103,26 @@ def 규격_검사(표, users, 묶음):
 
 def main():
     items, users, interactions = recsys.load()
+
+    점검 = 데이터_점검(items, users, interactions)
+    if sum(점검.values()) > 0:
+        raise SystemExit(f"① 데이터 점검 실패 — {점검}")
+    print(f"① 데이터 점검 — 여섯 가지 모두 0건 · 통과")
+
     묶음 = 학습하기(interactions, items)                    # 서비스용은 거래 기록 전체로 학습
+    print(f"② 학습 — 거래 기록 {len(interactions):,}건 · 투자자 {len(묶음['사용자_목록'])}명")
+
     표 = 일괄_추천(묶음, users, items)
+    print(f"③ 일괄 추천 — {len(표):,}줄")
+
     문제 = 규격_검사(표, users, 묶음)
     if 문제:
-        raise SystemExit("규격 검사 실패 — " + " / ".join(문제[:5]))
+        raise SystemExit("④ 규격 검사 실패 — " + " / ".join(문제[:5]))
+    print("④ 규격 검사 — 문제 0개 · 통과")
+
     출력_파일.parent.mkdir(exist_ok=True)
     표.to_csv(출력_파일, index=False, encoding="utf-8-sig")  # utf-8-sig = 엑셀에서 한글이 안 깨진다
-    print(f"완료 — {출력_파일} · {len(표):,}줄 · {표['user_id'].nunique()}명 · 규격 검사 통과")
+    print(f"⑤ 저장 — {출력_파일} · {표['user_id'].nunique()}명 × 10개")
 
 
 if __name__ == "__main__":
