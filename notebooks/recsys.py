@@ -270,6 +270,7 @@ class FM:
         self.V = rng.normal(0, 0.05, (X.shape[1], self.k))
         self.w = np.zeros(X.shape[1])
         self.b = 0.0
+        self.loss_curve_ = []                              # 에폭마다의 손실 — scikit-learn MLP 와 같은 이름
         for _ in range(self.epochs):                       # 에폭 — 학습 데이터 전체를 한 번 도는 것
             순서 = rng.permutation(len(X))
             for 시작 in range(0, len(X), 256):              # 256줄씩 나눠 조금씩 고친다
@@ -281,6 +282,8 @@ class FM:
                 self.w -= self.lr * (xb.T @ g + self.reg * self.w)
                 self.V -= self.lr * (xb.T @ (g[:, None] * XV)
                                      - self.V * ((xb ** 2).T @ g)[:, None] + self.reg * self.V)
+            p = np.clip(1 / (1 + np.exp(-self._score(X))), 1e-7, 1 - 1e-7)
+            self.loss_curve_.append(float(-np.mean(y * np.log(p) + (1 - y) * np.log(1 - p))))   # 로그 손실
         return self
 
     def predict(self, X):
