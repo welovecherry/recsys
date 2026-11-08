@@ -2,13 +2,13 @@
 
     python recommend_batch.py
 
-하는 일 (6주차까지 노트북에서 셀을 하나씩 눌러 하던 일을 그대로 묶었다) — 파이프라인(pipeline)
+하는 일 (6주차까지 노트북에서 셀을 하나씩 실행하던 일을 하나의 파일로 만들었다) — 파이프라인(pipeline)
   ① 들어온 데이터에 빈 값 · 중복 · 없는 번호가 없는지 검사한다   — 데이터 점검
   ② 거래 기록 전체로 모델을 학습한다                            — 학습(training)
   ③ 300명 모두에게 위험도 상한을 지킨 추천 10개                 — 일괄 추천(batch recommendation)
   ④ 결과 표가 정해 둔 규격을 지켰는지 검사한다                  — 규격 검사
   ⑤ 통과하면 CSV 파일 하나에 저장한다                           — 결과 파일
-  ① 이나 ④ 에서 문제가 나오면 그 자리에서 멈춘다. 잘못된 파일을 남기지 않는다.
+  ① 이나 ④ 에서 문제가 나오면 그 단계에서 실행을 중단한다. 잘못된 파일은 저장하지 않는다.
 
 다음 주 API(FastAPI)는 이 파일을 읽기만 한다 — 서빙(serving). API 는 모델을 다시 학습하지 않는다.
 """
@@ -20,7 +20,7 @@ from sklearn.decomposition import TruncatedSVD
 
 import recsys
 
-출력_파일 = Path("output") / "recommendations.csv"       # 결과 파일이 놓일 자리
+출력_파일 = Path("output") / "recommendations.csv"       # 결과 파일을 저장할 위치
 상한 = {"안정형": 3, "성장형": 4, "공격형": 5}          # 6주차 적합 기준 — 투자성향별 최대 위험도
 규격_열 = ["user_id", "rank", "item_id", "item_name", "risk_level", "persona", "score"]
 
@@ -38,7 +38,7 @@ def 데이터_점검(items, users, 기록):
 def 학습하기(기록, items):
     """거래 기록으로 TruncatedSVD 를 학습하고, 서빙에 필요한 것을 딕셔너리 하나에 담는다."""
     상호작용_행렬 = recsys.interaction_matrix(기록, items)
-    모델 = TruncatedSVD(n_components=8, random_state=42)    # random_state 고정 = 다시 돌려도 같은 결과
+    모델 = TruncatedSVD(n_components=8, random_state=42)    # random_state 고정 = 다시 실행해도 같은 결과
     return {"사용자_요인": 모델.fit_transform(상호작용_행렬),
             "아이템_요인": 모델.components_,
             "사용자_목록": list(상호작용_행렬.index),
