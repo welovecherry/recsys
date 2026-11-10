@@ -4,7 +4,7 @@
 
 하는 일 (6주차까지 노트북에서 셀을 하나씩 실행하던 일을 하나의 파일로 만들었다) — 파이프라인(pipeline)
   ① 들어온 데이터에 빈 값 · 중복 · 없는 번호가 없는지 검사한다   — 데이터 점검
-  ② 거래 기록 전체로 모델을 학습한다                            — 학습(training)
+  ② 상호작용 기록 전체로 모델을 학습한다                            — 학습(training)
   ③ 300명 모두에게 위험도 상한을 지킨 추천 10개                 — 일괄 추천(batch recommendation)
   ④ 결과 표가 정해 둔 규격을 지켰는지 검사한다                  — 규격 검사
   ⑤ 통과하면 CSV 파일 하나에 저장한다                           — 결과 파일
@@ -28,7 +28,7 @@ import recsys
 def 데이터_점검(items, users, 기록):
     """들어온 데이터를 검사해 {검사 이름: 문제 개수} 를 돌려준다. 모두 0 이면 통과."""
     return {"빈 값": int(items.isna().sum().sum() + users.isna().sum().sum() + 기록.isna().sum().sum()),
-            "똑같은 거래 기록": int(기록.duplicated().sum()),
+            "똑같은 상호작용 기록": int(기록.duplicated().sum()),
             "종목 목록에 없는 종목 번호": int((~기록["item_id"].isin(items["item_id"])).sum()),
             "투자자 목록에 없는 투자자 번호": int((~기록["user_id"].isin(users["user_id"])).sum()),
             "세 가지가 아닌 투자성향": int((~users["persona"].isin(상한)).sum()),
@@ -36,7 +36,7 @@ def 데이터_점검(items, users, 기록):
 
 
 def 학습하기(기록, items):
-    """거래 기록으로 TruncatedSVD 를 학습하고, 서빙에 필요한 것을 딕셔너리 하나에 담는다."""
+    """상호작용 기록으로 TruncatedSVD 를 학습하고, 서빙에 필요한 것을 딕셔너리 하나에 담는다."""
     상호작용_행렬 = recsys.interaction_matrix(기록, items)
     모델 = TruncatedSVD(n_components=8, random_state=42)    # random_state 고정 = 다시 실행해도 같은 결과
     return {"사용자_요인": 모델.fit_transform(상호작용_행렬),
@@ -109,8 +109,8 @@ def main():
         raise SystemExit(f"① 데이터 점검 실패 — {점검}")
     print(f"① 데이터 점검 — 여섯 가지 모두 0건 · 통과")
 
-    묶음 = 학습하기(interactions, items)                    # 서비스용은 거래 기록 전체로 학습
-    print(f"② 학습 — 거래 기록 {len(interactions):,}건 · 투자자 {len(묶음['사용자_목록'])}명")
+    묶음 = 학습하기(interactions, items)                    # 서비스용은 상호작용 기록 전체로 학습
+    print(f"② 학습 — 상호작용 기록 {len(interactions):,}건 · 투자자 {len(묶음['사용자_목록'])}명")
 
     표 = 일괄_추천(묶음, users, items)
     print(f"③ 일괄 추천 — {len(표):,}줄")
