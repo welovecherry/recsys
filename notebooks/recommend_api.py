@@ -67,17 +67,20 @@ def health():
 def recommend(user_id: str,
               k: int = Query(10, ge=1, le=10, description="몇 개를 받을지 (1 ~ 10)")):
     """투자자 번호를 받아, 위험도 상한을 지킨 추천을 순위대로 k개 응답한다."""
-    # 1) 그 투자자의 줄만 고른다
+    # 1) 결과 파일(3,000줄)에서 요청한 투자자의 줄만 가져온다
+    #    예: user_id 가 "U0001" 이면 그 투자자의 추천 10줄이 남는다
     그_투자자 = 추천표[추천표["user_id"] == user_id]
 
-    # 2) 결과 파일에 없는 번호면 404 (찾는 것이 없음) 로 응답하고 끝낸다
+    # 2) 가져온 줄이 하나도 없으면 결과 파일에 없는 투자자이므로 404 (찾는 것이 없음) 로 응답하고 함수를 끝낸다
+    #    빈 목록에 성공(200)을 붙여 응답하면, 앱이 「추천이 없는 것」과 「번호가 틀린 것」을 구별할 수 없다
     if 그_투자자.empty:
         raise HTTPException(status_code=404, detail=f"{user_id} 는 추천이 없는 투자자입니다")
 
-    # 3) 순위 순서로 정렬해서 위에서 k개만 남긴다
+    # 3) rank (추천 순위) 순서로 정렬하고, 위에서부터 요청한 k개만 남긴다 (k 를 안 적으면 10개 전부)
     위에서_k개 = 그_투자자.sort_values("rank").head(k)
 
-    # 4) 한 줄씩 응답의 모양(RecommendItem)에 맞게 만든다
+    # 4) 남은 줄을 한 줄씩 응답의 모양(RecommendItem)으로 만든다
+    #    user_id 와 persona 는 모든 줄이 같으므로 줄마다 넣지 않고, 5) 에서 한 번만 적는다
     추천_목록 = []
     for 줄 in 위에서_k개.itertuples():
         추천_목록.append(RecommendItem(
@@ -88,5 +91,5 @@ def recommend(user_id: str,
             score=float(줄.score),
         ))
 
-    # 5) 투자자 번호 · 투자 성향 · 추천 목록을 응답한다 (FastAPI 가 JSON 으로 바꿔서 보낸다)
+    # 5) 투자자 번호 · 투자 성향 · 추천 목록을 묶어서 응답한다 (FastAPI 가 JSON 글자로 바꿔서 보낸다)
     return RecommendResponse(user_id=user_id, persona=위에서_k개["persona"].iloc[0], recommendations=추천_목록)
