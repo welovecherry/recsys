@@ -68,8 +68,9 @@ with 탭_한명:
 # ── 화면 2. 투자 성향별 ──────────────────────────────────────────────────
 with 탭_성향:
     분포 = pd.crosstab(추천표["persona"], 추천표["risk_level"])               # 성향 × 위험도 개수 표
+    분포 = 분포.reindex(["안정형", "성장형", "공격형"], fill_value=0)           # 성향 순서를 노트북 9.3 과 같게 한다
     st.write("투자 성향별로 추천된 종목의 위험도 개수")
-    st.bar_chart(분포)
+    st.bar_chart(분포, sort=False)                                          # sort=False : 위 순서 그대로 막대를 그린다
     st.dataframe(분포)
 
 
