@@ -10,6 +10,7 @@
 앱은 학습하지 않는다. 7주차 recommend_batch.py 가 만든 결과 파일을 읽어서 보여 주기만 한다.
 Streamlit 은 사용자가 상자를 바꿀 때마다 이 파일을 위에서 아래로 다시 실행한다.
 """
+from datetime import datetime     # 날짜와 시각을 다루는 도구
 from pathlib import Path          # 파일 위치(경로)를 다루는 도구
 
 import pandas as pd               # 표를 다루는 도구
@@ -17,6 +18,7 @@ import streamlit as st            # 웹 화면을 만드는 도구
 
 결과_파일 = Path(__file__).resolve().parent / "output" / "recommendations.csv"   # 7주차가 저장한 파일
 필요한_열 = ["user_id", "rank", "item_id", "item_name", "risk_level", "persona", "score"]   # 7주차 결과 파일 규격
+상한표 = {"안정형": 3, "성장형": 4, "공격형": 5}                                                  # 6주차에서 정한 투자 성향별 위험도 상한
 
 st.set_page_config(page_title="추천 대시보드", layout="wide")
 st.title("추천 대시보드")
@@ -45,6 +47,16 @@ if 추천표.empty or 빠진_열:                                               
 
 투자자_목록 = sorted(추천표["user_id"].unique())
 
+# ── 맨 위 요약 · 결과 파일 갱신 시각 ──────────────────────────────────────
+갱신_시각 = datetime.fromtimestamp(결과_파일.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+요약1, 요약2, 요약3, 요약4 = st.columns(4)
+요약1.metric("투자자 수", f"{len(투자자_목록)}명")
+요약2.metric("추천 줄 수", f"{len(추천표):,}줄")
+요약3.metric("결과 파일 갱신", 갱신_시각)
+if 요약4.button("캐시 지우기"):                                               # 결과 파일이 바뀌었을 때 옛 결과를 버린다
+    st.cache_data.clear()
+    st.rerun()
+
 탭_한명, 탭_성향, 탭_비교 = st.tabs(["투자자 한 명", "투자 성향별", "두 투자자 비교"])
 
 
@@ -62,7 +74,17 @@ with 탭_한명:
     가운데.metric("추천 중 가장 높은 위험도", 최고_위험도)
     오른쪽.metric("추천 점수 평균", f"{평균_점수:.4f}")
 
-    st.dataframe(그_사람[["rank", "item_id", "item_name", "risk_level", "score"]], hide_index=True)
+    상한 = 상한표[성향]                                                      # 이 투자 성향의 위험도 상한
+    if 최고_위험도 <= 상한:
+        st.success(f"위험도 상한 {상한} 이 지켜졌습니다 — 추천 10개의 가장 높은 위험도는 {최고_위험도} 입니다.")
+    else:
+        st.error(f"위험도 상한 {상한} 을 넘은 추천이 있습니다 — 가장 높은 위험도는 {최고_위험도} 입니다.")
+
+    표 = 그_사람[["rank", "item_id", "item_name", "risk_level", "score"]]
+    st.dataframe(표, hide_index=True,
+                 column_config={"score": st.column_config.ProgressColumn("score", min_value=0.0, max_value=float(추천표["score"].max()), format="%.4f")})   # 점수를 막대로 보여 준다
+    st.download_button("추천 10개를 CSV 로 내려받기", 표.to_csv(index=False).encode("utf-8-sig"),
+                       file_name=f"{투자자}_추천.csv", mime="text/csv")
 
 
 # ── 화면 2. 투자 성향별 ──────────────────────────────────────────────────
@@ -72,6 +94,19 @@ with 탭_성향:
     st.write("투자 성향별로 추천된 종목의 위험도 개수")
     st.bar_chart(분포, sort=False)                                          # sort=False : 위 순서 그대로 막대를 그린다
     st.dataframe(분포)
+
+    추천표_상한 = 추천표.copy()
+    추천표_상한["상한"] = 추천표_상한["persona"].map(상한표)                    # 줄마다 그 성향의 상한을 붙인다
+    추천표_상한["초과"] = 추천표_상한["risk_level"] > 추천표_상한["상한"]         # 상한을 넘으면 True
+    점검표 = pd.DataFrame({"위험도 상한": pd.Series(상한표),
+                          "추천 수": 추천표_상한.groupby("persona").size(),
+                          "상한 초과 추천 수": 추천표_상한.groupby("persona")["초과"].sum()}).reindex(["안정형", "성장형", "공격형"])
+    st.write("위험도 상한 점검")
+    st.dataframe(점검표)
+    if int(점검표["상한 초과 추천 수"].sum()) == 0:
+        st.success("세 성향 모두 위험도 상한을 넘은 추천이 0개입니다.")
+    else:
+        st.error("위험도 상한을 넘은 추천이 있습니다. 위 표에서 성향을 확인하세요.")
 
 
 # ── 화면 3. 두 투자자 비교 ───────────────────────────────────────────────
@@ -88,10 +123,17 @@ with 탭_비교:
         종목_A = set(줄_A["item_id"])
         종목_B = set(줄_B["item_id"])
         같은_종목 = sorted(종목_A & 종목_B)                                   # & = 두 사람 모두에게 추천된 종목
+        A에만 = sorted(종목_A - 종목_B)                                       # - = 한쪽에만 있는 종목
+        B에만 = sorted(종목_B - 종목_A)
 
         st.write(f"{투자자_A} ({줄_A['persona'].iloc[0]}) 와 {투자자_B} ({줄_B['persona'].iloc[0]}) 에게 모두 추천된 종목 {len(같은_종목)}개 / 10개")
         st.write(f"평균 위험도 — {투자자_A} {줄_A['risk_level'].mean():.2f} · {투자자_B} {줄_B['risk_level'].mean():.2f}")
-        if 같은_종목:
-            이름표 = 추천표.drop_duplicates("item_id").set_index("item_id")["item_name"]
-            st.dataframe(pd.DataFrame({"item_id": 같은_종목, "item_name": [이름표[번호] for 번호 in 같은_종목]}),
-                         hide_index=True)
+
+        종목정보 = 추천표.drop_duplicates("item_id").set_index("item_id")[["item_name", "risk_level"]]   # 종목 번호 → 이름 · 위험도
+        왼쪽, 가운데, 오른쪽 = st.columns(3)
+        for 해당_열, 제목, 번호들 in [(왼쪽, f"{투자자_A} 에게만 ({len(A에만)}개)", A에만),
+                                      (가운데, f"둘 다 ({len(같은_종목)}개)", 같은_종목),
+                                      (오른쪽, f"{투자자_B} 에게만 ({len(B에만)}개)", B에만)]:
+            해당_열.write(제목)
+            if 번호들:
+                해당_열.dataframe(종목정보.loc[번호들], hide_index=True, width="stretch")   # 종목 이름과 위험도만 보여 준다
